@@ -34,6 +34,12 @@ def expenses_list() -> (Response, int):
     ), 200
 
 
+@app.route("/expenses/<int:expense_id>", methods=["GET", ])
+def expense_detail(expense_id: int) -> (Response, int):
+    expense = db.get_or_404(Expense, expense_id)
+    return jsonify({"id": expense.id, "title": expense.title}), 200
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
