@@ -51,6 +51,17 @@ def expense_create() -> (Response, int):
     return jsonify({"id": new_expense.id, "title": new_expense.title}), 201
 
 
+@app.route("/expenses/<int:expense_id>/", methods=["PUT", ])
+def expense_update(expense_id: int) -> (Response, int):
+    expense = db.get_or_404(Expense, expense_id)
+    data = request.json
+    expense.title = data.get("title", expense.title)
+    db.session.add(expense)
+    db.session.commit()
+
+    return jsonify({"id": expense.id, "title": expense.title}), 201
+
+
 @app.errorhandler(404)
 def resource_not_found(e: NotFound) -> (Response, int):
     return jsonify(error=str(e)), 404
