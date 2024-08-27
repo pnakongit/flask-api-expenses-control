@@ -62,6 +62,15 @@ def expense_update(expense_id: int) -> (Response, int):
     return jsonify({"id": expense.id, "title": expense.title}), 201
 
 
+@app.route("/expenses/<int:expense_id>/", methods=["DELETE", ])
+def expense_delete(expense_id: int) -> (Response, int):
+    expense = db.get_or_404(Expense, expense_id)
+    db.session.delete(expense)
+    db.session.commit()
+
+    return jsonify(), 204
+
+
 @app.errorhandler(404)
 def resource_not_found(e: NotFound) -> (Response, int):
     return jsonify(error=str(e)), 404
