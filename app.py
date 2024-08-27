@@ -2,6 +2,7 @@ from flask import Flask, jsonify, Response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
+from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 
@@ -38,6 +39,11 @@ def expenses_list() -> (Response, int):
 def expense_detail(expense_id: int) -> (Response, int):
     expense = db.get_or_404(Expense, expense_id)
     return jsonify({"id": expense.id, "title": expense.title}), 200
+
+
+@app.errorhandler(404)
+def resource_not_found(e: NotFound) -> (Response, int):
+    return jsonify(error=str(e)), 404
 
 
 if __name__ == "__main__":
