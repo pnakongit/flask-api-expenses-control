@@ -26,6 +26,14 @@ def index() -> (Response, int):
     return jsonify({"message": "Hello World!"}), 200
 
 
+@app.route("/expenses", methods=["GET", ])
+def expenses_list() -> (Response, int):
+    expenses = Expense.query.all()
+    return jsonify(
+        [{"id": expense.id, "title": expense.title} for expense in expenses]
+    ), 200
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
