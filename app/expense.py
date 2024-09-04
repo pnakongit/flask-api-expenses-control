@@ -1,6 +1,8 @@
 from flask import jsonify, request, Response, Blueprint
+from marshmallow import ValidationError
 
 from app.db import Expense, db
+from app.schemas import expense_schema
 
 bp = Blueprint("expense", __name__, url_prefix="/expenses")
 
@@ -22,9 +24,8 @@ def expenses_list() -> (Response, int):
 
     """
     expenses = Expense.query.all()
-    return jsonify(
-        [{"id": expense.id, "title": expense.title} for expense in expenses]
-    ), 200
+
+    return expense_schema.dump(expenses, many=True), 200
 
 
 @bp.route("/<int:expense_id>/", methods=["GET", ])
@@ -49,7 +50,7 @@ def expense_detail(expense_id: int) -> (Response, int):
 
     """
     expense = db.get_or_404(Expense, expense_id)
-    return jsonify({"id": expense.id, "title": expense.title}), 200
+    return expense_schema.dump(expense), 200
 
 
 @bp.route("/", methods=["POST", ])
@@ -72,11 +73,20 @@ def expense_create() -> (Response, int):
           $ref: '#/definitions/ExpenseOut'
 
     """
+    load_data = request.get_json()
+    if not load_data:
+        return jsonify({'message': 'No input data provided'}), 400
 
-    new_expense = Expense(title=request.json["title"])
+    try:
+        data = expense_schema.load(load_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
+
+    new_expense = Expense(**data)
     db.session.add(new_expense)
     db.session.commit()
-    return jsonify({"id": new_expense.id, "title": new_expense.title}), 201
+
+    return expense_schema.dump(new_expense), 201
 
 
 @bp.route("/<int:expense_id>/", methods=["PUT", ])
@@ -106,9 +116,16 @@ def expense_update(expense_id: int) -> (Response, int):
         description: Not found.
     """
     expense = db.get_or_404(Expense, expense_id)
-    data = request.json
-    expense.title = data.get("title", expense.title)
-    db.session.add(expense)
+    load_data = request.get_json()
+    if not load_data:
+        return jsonify({'message': 'No input data provided'}), 400
+
+    try:
+        data = expense_schema.load(load_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
+
+    Expense.query.filter(Expense.id == expense_id).update(data)
     db.session.commit()
 
     return jsonify({"id": expense.id, "title": expense.title}), 201
